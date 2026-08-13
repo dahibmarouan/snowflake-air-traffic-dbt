@@ -1,0 +1,26 @@
+name: 'air_traffic'
+version: '1.0.0'
+config-version: 2
+
+profile: 'air_traffic'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  air_traffic:
+    staging:
+      +schema: staging
+    intermediate:
+      +schema: intermediate
+    marts:
+      +schema: marts
+
+seeds:
+  air_traffic:
+    +schema: staging

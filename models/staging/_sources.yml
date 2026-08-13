@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    database: air_traffic
+    schema: raw
+    tables:
+      - name: opensky_table
+      - name: weather_table
