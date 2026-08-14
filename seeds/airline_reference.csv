@@ -1,13 +1,13 @@
-callsign_prefix,airline_name
-CLX,Cargolux
-GEC,Lufthansa Cargo
-DLH,Lufthansa
-SWR,Swiss International Air Lines
-EZY,easyJet
-RYR,Ryanair
-KLM,KLM
-BAW,British Airways
-WZZ,Wizz Air
-TAP,TAP Air Portugal
-IBE,Iberia
-VLG,Vueling
+callsign_prefix,airline_name,is_cargo
+CLX,Cargolux,true
+GEC,Lufthansa Cargo,true
+DLH,Lufthansa,false
+SWR,Swiss International Air Lines,false
+EZY,easyJet,false
+RYR,Ryanair,false
+KLM,KLM,false
+BAW,British Airways,false
+WZZ,Wizz Air,false
+TAP,TAP Air Portugal,false
+IBE,Iberia,false
+VLG,Vueling,false
