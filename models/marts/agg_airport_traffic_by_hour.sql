@@ -1,3 +1,11 @@
+{{
+    config(
+        materialized='dynamic_table',
+        snowflake_warehouse='AIR_TRAFFIC_WH',
+        target_lag='15 minutes'
+    )
+}}
+
 with visits as (
     select * from {{ ref('fct_airport_visits') }}
 )
