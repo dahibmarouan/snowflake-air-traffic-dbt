@@ -1,5 +1,15 @@
+{{
+    config(
+        materialized='incremental'
+    )
+}}
+
 with source as (
     select * from {{ source('raw', 'opensky_table') }}
+
+    {% if is_incremental() %}
+    where loaded_at > (select max(loaded_at) from {{ this }})
+    {% endif %}
 )
 
 select
