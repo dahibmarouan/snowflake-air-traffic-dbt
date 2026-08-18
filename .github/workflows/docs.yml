@@ -1,0 +1,48 @@
+name: Publish dbt docs
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate dbt docs
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          air_traffic:
+            target: ci
+            outputs:
+              ci:
+                type: snowflake
+                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+                user: SVC_TRANSFORMER
+                private_key_path: /tmp/rsa_key.p8
+                role: TRANSFORMER
+                warehouse: AIR_TRAFFIC_WH
+                database: AIR_TRAFFIC
+                schema: analytics
+          EOF
+          echo "${{ SNOWFLAKE_PRIVATE_KEY_TRANSFORMER }}" > /tmp/rsa_key.p8
+          dbt docs generate --target ci
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target
