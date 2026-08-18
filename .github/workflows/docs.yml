@@ -38,7 +38,7 @@ jobs:
                 database: AIR_TRAFFIC
                 schema: analytics
           EOF
-          echo "${{ SNOWFLAKE_PRIVATE_KEY_TRANSFORMER }}" > /tmp/rsa_key.p8
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_TRANSFORMER }}" > /tmp/rsa_key.p8
           dbt docs generate --target ci
 
       - name: Deploy to GitHub Pages
