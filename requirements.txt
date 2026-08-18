@@ -1,5 +1,5 @@
-requests
-python-dotenv
-snowflake-connector-python
-cryptography
-dbt-snowflake
+requests==2.34.2
+python-dotenv==1.2.2
+snowflake-connector-python==4.7.2
+cryptography==50.0.0
+dbt-snowflake==1.12.0
