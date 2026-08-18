@@ -1,5 +1,7 @@
--- Compute engine for this project. XSMALL is enough for our data volume;
--- AUTO_SUSPEND=60 minimizes idle credit consumption.
+-- =====================================================================
+-- PART 1 — run before the first `dbt run` (nothing else exists yet)
+-- =====================================================================
+
 CREATE WAREHOUSE AIR_TRAFFIC_WH
   WAREHOUSE_SIZE = 'XSMALL'
   AUTO_SUSPEND = 60
@@ -8,20 +10,15 @@ CREATE WAREHOUSE AIR_TRAFFIC_WH
 
 CREATE DATABASE AIR_TRAFFIC;
 
--- Landing layer for unparsed source data. staging/intermediate/marts
--- schemas will be created automatically by dbt later.
 CREATE SCHEMA AIR_TRAFFIC.RAW;
 
--- Least-privilege role used only by the ingestion pipeline.
+-- Ingestion role (used by the Python scripts / GitHub Actions)
 CREATE ROLE LOADER;
 GRANT USAGE ON WAREHOUSE AIR_TRAFFIC_WH TO ROLE LOADER;
 GRANT USAGE ON DATABASE AIR_TRAFFIC TO ROLE LOADER;
 GRANT USAGE ON SCHEMA AIR_TRAFFIC.RAW TO ROLE LOADER;
 GRANT CREATE TABLE ON SCHEMA AIR_TRAFFIC.RAW TO ROLE LOADER;
 
--- Service account for the Python ingestion scripts, authenticated by key
--- pair (no password). Public key is not secret, but kept as a placeholder
--- here since it goes stale the moment the key is rotated.
 CREATE USER SVC_LOADER
   TYPE = SERVICE
   RSA_PUBLIC_KEY = '<PASTE_CURRENT_PUBLIC_KEY_HERE>'
@@ -31,7 +28,6 @@ CREATE USER SVC_LOADER
 
 GRANT ROLE LOADER TO USER SVC_LOADER;
 
--- Raw landing tables: one API poll per row, not yet parsed.
 CREATE TABLE AIR_TRAFFIC.RAW.OPENSKY_TABLE (
     loaded_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
     source_zone STRING,
@@ -44,7 +40,52 @@ CREATE TABLE AIR_TRAFFIC.RAW.WEATHER_TABLE (
     raw_payload VARIANT
 );
 
--- LOADER owns neither table (created manually under ACCOUNTADMIN), so
--- INSERT must be granted explicitly.
 GRANT INSERT ON TABLE AIR_TRAFFIC.RAW.OPENSKY_TABLE TO ROLE LOADER;
 GRANT INSERT ON TABLE AIR_TRAFFIC.RAW.WEATHER_TABLE TO ROLE LOADER;
+
+-- Transformation role (used interactively by dbt during development)
+CREATE ROLE TRANSFORMER;
+GRANT USAGE ON WAREHOUSE AIR_TRAFFIC_WH TO ROLE TRANSFORMER;
+GRANT USAGE ON DATABASE AIR_TRAFFIC TO ROLE TRANSFORMER;
+GRANT USAGE ON SCHEMA AIR_TRAFFIC.RAW TO ROLE TRANSFORMER;
+GRANT SELECT ON ALL TABLES IN SCHEMA AIR_TRAFFIC.RAW TO ROLE TRANSFORMER;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA AIR_TRAFFIC.RAW TO ROLE TRANSFORMER;
+-- Lets dbt create the staging/intermediate/marts schemas itself
+GRANT CREATE SCHEMA ON DATABASE AIR_TRAFFIC TO ROLE TRANSFORMER;
+
+GRANT ROLE TRANSFORMER TO USER DAHIBMAROUAN;
+
+-- =====================================================================
+-- PART 2 — run after the first `dbt run` (staging/intermediate/marts
+-- schemas and fct_airport_visits must already exist)
+-- =====================================================================
+
+-- Read-only role for the dashboard
+CREATE ROLE REPORTER;
+GRANT USAGE ON WAREHOUSE AIR_TRAFFIC_WH TO ROLE REPORTER;
+GRANT USAGE ON DATABASE AIR_TRAFFIC TO ROLE REPORTER;
+GRANT USAGE ON SCHEMA AIR_TRAFFIC.MARTS TO ROLE REPORTER;
+GRANT SELECT ON ALL TABLES IN SCHEMA AIR_TRAFFIC.MARTS TO ROLE REPORTER;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA AIR_TRAFFIC.MARTS TO ROLE REPORTER;
+GRANT SELECT ON ALL VIEWS IN SCHEMA AIR_TRAFFIC.MARTS TO ROLE REPORTER;
+GRANT SELECT ON FUTURE VIEWS IN SCHEMA AIR_TRAFFIC.MARTS TO ROLE REPORTER;
+GRANT SELECT ON ALL DYNAMIC TABLES IN SCHEMA AIR_TRAFFIC.MARTS TO ROLE REPORTER;
+GRANT SELECT ON FUTURE DYNAMIC TABLES IN SCHEMA AIR_TRAFFIC.MARTS TO ROLE REPORTER;
+
+GRANT ROLE REPORTER TO USER DAHIBMAROUAN;
+
+-- Masking policy on private/business jet identifiers
+GRANT CREATE MASKING POLICY ON SCHEMA AIR_TRAFFIC.MARTS TO ROLE TRANSFORMER;
+GRANT APPLY MASKING POLICY ON ACCOUNT TO ROLE TRANSFORMER;
+
+CREATE MASKING POLICY mask_private_aircraft AS (val STRING, airline_name STRING) RETURNS STRING ->
+    CASE
+        WHEN CURRENT_ROLE() = 'ACCOUNTADMIN' THEN val
+        WHEN airline_name = 'Unknown' THEN '***MASKED***'
+        ELSE val
+    END;
+
+ALTER VIEW AIR_TRAFFIC.MARTS.FCT_AIRPORT_VISITS
+  MODIFY COLUMN icao24 SET MASKING POLICY mask_private_aircraft USING (icao24, airline_name);
+ALTER VIEW AIR_TRAFFIC.MARTS.FCT_AIRPORT_VISITS
+  MODIFY COLUMN callsign SET MASKING POLICY mask_private_aircraft USING (callsign, airline_name);
