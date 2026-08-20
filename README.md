@@ -1,3 +1,6 @@
+![Ingestion](https://github.com/dahibmarouan/snowflake-air-traffic-dbt/actions/workflows/ingest.yml/badge.svg)
+![Docs](https://github.com/dahibmarouan/snowflake-air-traffic-dbt/actions/workflows/docs.yml/badge.svg)
+
 # Snowflake Air Traffic Analytics
 
 Real-time air traffic analytics on Snowflake + dbt — combining live flight
