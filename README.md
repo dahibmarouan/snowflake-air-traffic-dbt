@@ -1,8 +1,14 @@
+![Ingestion](https://github.com/dahibmarouan/snowflake-air-traffic-dbt/actions/workflows/ingest.yml/badge.svg)
+![Docs](https://github.com/dahibmarouan/snowflake-air-traffic-dbt/actions/workflows/docs.yml/badge.svg)
+
 # Snowflake Air Traffic Analytics
 
 Real-time air traffic analytics on Snowflake + dbt — combining live flight
 data (OpenSky Network) and weather data (Open-Meteo) to track patterns
 around Luxembourg, Frankfurt, Zurich, and Geneva.
+
+This is my second data project — see my first one, a pharmacovigilance
+pipeline on dbt + DuckDB, [here](https://github.com/dahibmarouan/pharma-adverse-events-dbt).
 
 ## Business Question
 
