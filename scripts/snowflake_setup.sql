@@ -89,3 +89,10 @@ ALTER VIEW AIR_TRAFFIC.MARTS.FCT_AIRPORT_VISITS
   MODIFY COLUMN icao24 SET MASKING POLICY mask_private_aircraft USING (icao24, airline_name);
 ALTER VIEW AIR_TRAFFIC.MARTS.FCT_AIRPORT_VISITS
   MODIFY COLUMN callsign SET MASKING POLICY mask_private_aircraft USING (callsign, airline_name);
+
+  -- Attach custom roles to SYSADMIN, the recommended parent for all
+-- business/application roles (best practice, discovered after the fact —
+-- these roles were originally created directly under ACCOUNTADMIN).
+GRANT ROLE LOADER TO ROLE SYSADMIN;
+GRANT ROLE TRANSFORMER TO ROLE SYSADMIN;
+GRANT ROLE REPORTER TO ROLE SYSADMIN;
